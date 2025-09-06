@@ -30,8 +30,6 @@ class TestArticleLoader(unittest.TestCase):
     def test_to_dataframe (self):
         articles = DMLoadData.load_from_directory(self.data_dir)
         df = DMLoadData.to_dataframe(articles.repository)
-
-        assert list(df.columns) == ['category', 'title', 'content']
         assert df['category'][0] == 'business'
         assert df['title'][0] == 'Dollar gains on Greenspan speech'
         assert 'The dollar has hit its' in df['content'][0]

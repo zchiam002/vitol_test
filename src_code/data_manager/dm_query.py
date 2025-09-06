@@ -1,5 +1,5 @@
 import re
-import pandas as pd
+from typing import Optional
 import nltk
 nltk.download('punkt')
 nltk.download('stopwords')
@@ -10,9 +10,10 @@ from pydantic import BaseModel
 
 class DMQuery(BaseModel):
     content: str
+    original_content: Optional[str] = None
 
     # Basic preprocessing of the data 
-    def basic_preprocess (self) -> None:
+    def basic_preprocess (self, cache_original: bool = True) -> None:
 
         def preprocess_text(text: str) -> str:
             text = text.lower()
@@ -29,6 +30,9 @@ class DMQuery(BaseModel):
 
             # Join the tokens back into a single string
             return " ".join(lemmatized_tokens)
+
+        if cache_original: 
+            self.original_content = self.content
 
         self.content = preprocess_text(self.content)
 

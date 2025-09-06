@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Dict
+from typing import List, Dict, Optional
 import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix
@@ -11,8 +11,11 @@ from src_code.data_manager.dm_query import DMQuery
 
 class DMArticleRepository(BaseModel):
     repository:List[DMArticle]
+    articles_preprocessed:Optional[bool] = False
 
-    # To return the top n articles of the
+    # To return the top n articles based on the query 
+    def get_top_n_articles (self, incoming_query: str, top_n: int) -> pd.DataFrame:
+        return self._get_basic_top_n_scores (query=DMQuery(content=incoming_query), top_n=top_n)
 
     # To intake a query and return a relevance score
     def get_relevance_score (self, incoming_query: str) -> float:
@@ -31,8 +34,8 @@ class DMArticleRepository(BaseModel):
     def get_novelty_score (self, article_idx: int) -> float:
         # Initialize the basic vectorization of the articles 
         self._initialize_basic_vectorization()
-
         self._initialize_basic_novelty_matrix()
+
         if not (0 <= article_idx < len(self._novelty_matrix)):
             raise IndexError(f"Index {article_idx} is out of bounds for the document repository.")
         return self._novelty_matrix[article_idx]
@@ -48,6 +51,11 @@ class DMArticleRepository(BaseModel):
 
     # To do basic computation of the relevance score 
     def _get_basic_top_n_scores (self, query: DMQuery, top_n: int) -> pd.DataFrame: 
+        # Initialize the basic vectorization of the articles 
+        self._execute_basic_process()
+        self._initialize_basic_vectorization()
+        self._initialize_basic_novelty_matrix()
+
         # Definition of the weights associated with the category, title and content 
         WEIGHTS = self._get_basic_calculation_weights()
         denominator = sum(WEIGHTS.values())
@@ -74,8 +82,11 @@ class DMArticleRepository(BaseModel):
             
             results_list.append({
                 'rank': rank + 1,
-                'title': most_similar_document.title,
-                'relevance_score': final_scores[idx]
+                'category': most_similar_document.original_category,
+                'title': most_similar_document.original_title,
+                'content': most_similar_document.original_content,
+                'relevance_score': final_scores[idx],
+                'novelty_score': self.get_novelty_score(article_idx=idx)
             })
 
         # Create the pandas DataFrame from the results list.
@@ -157,3 +168,12 @@ class DMArticleRepository(BaseModel):
 
         # Use a single list comprehension with getattr()
         return [getattr(article, attribute) for article in self.repository]
+    
+    # To execute basic pre-processing of the articles in the repository 
+    def _execute_basic_process (self) -> None: 
+        if not self.articles_preprocessed:
+            for article in self.repository:
+                article.basic_preprocess(cache_original=True)
+            
+            self.articles_preprocessed = True
+        return 
