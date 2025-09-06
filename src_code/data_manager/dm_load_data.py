@@ -4,15 +4,16 @@ from pydantic import ValidationError
 from typing import List
 
 from src_code.data_manager.dm_article import DMArticle
+from src_code.data_manager.dm_article_repository import DMArticleRepository
 
 class DMLoadData: 
     @staticmethod
-    def load_from_directory(base_path: str) -> List[DMArticle]:
+    def load_from_directory(base_path: str) -> DMArticleRepository:
         articles: List[DMArticle] = []
         
         if not os.path.exists(base_path):
             print(f"Error: The provided path '{base_path}' does not exist.")
-            return articles
+            return DMArticleRepository(repository=articles)
 
         # List all subdirectories (categories) within the base path
         try:
@@ -20,7 +21,7 @@ class DMLoadData:
                           if os.path.isdir(os.path.join(base_path, d))]
         except OSError as e:
             print(f"Error listing directories in '{base_path}': {e}")
-            return articles
+            return DMArticleRepository(repository=articles)
 
         for category in categories:
             category_path = os.path.join(base_path, category)
@@ -52,7 +53,7 @@ class DMLoadData:
                     except Exception as e:
                         print(f"Error processing file '{file_path}': {e}")
         
-        return articles
+        return DMArticleRepository(repository=articles)
 
     @staticmethod
     def to_dataframe(articles: List[DMArticle]) -> pd.DataFrame:

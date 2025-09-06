@@ -1,0 +1,9 @@
+1. Create a data loader, make a class so that the main category, title and content can be distinguished easily
+2. Let's preprocess the data 
+3. 
+
+
+
+Process Search String: The user's search string would be converted into a vector representation using the same method as the articles (e.g., TF-IDF or BERT embeddings).
+
+it is important to talk about chunking 

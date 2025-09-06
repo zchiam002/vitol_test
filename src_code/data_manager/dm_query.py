@@ -8,13 +8,7 @@ from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from pydantic import BaseModel
 
-class DMArticle(BaseModel):
-    '''The category is defined by the folder name,
-    the title is extracted from the first line of the article,
-    the rest are the contents.
-    '''
-    category: str
-    title: str
+class DMQuery(BaseModel):
     content: str
 
     # Basic preprocessing of the data 
@@ -36,8 +30,6 @@ class DMArticle(BaseModel):
             # Join the tokens back into a single string
             return " ".join(lemmatized_tokens)
 
-        self.category = preprocess_text(self.category)
-        self.title = preprocess_text(self.title)
         self.content = preprocess_text(self.content)
 
         return 

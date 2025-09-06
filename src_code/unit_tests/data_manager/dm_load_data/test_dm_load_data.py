@@ -14,11 +14,11 @@ class TestArticleLoader(unittest.TestCase):
     def test_load_data(self):
         articles = DMLoadData.load_from_directory(self.data_dir)
 
-        assert len(articles) == 2
+        assert len(articles.repository) == 2
 
         article_categories = []
         article_titles = []
-        for article in articles: 
+        for article in articles.repository: 
             article_categories.append(article.category)
             article_titles.append(article.title)
 
@@ -29,12 +29,23 @@ class TestArticleLoader(unittest.TestCase):
 
     def test_to_dataframe (self):
         articles = DMLoadData.load_from_directory(self.data_dir)
-        df = DMLoadData.to_dataframe(articles)
+        df = DMLoadData.to_dataframe(articles.repository)
 
         assert list(df.columns) == ['category', 'title', 'content']
         assert df['category'][0] == 'business'
         assert df['title'][0] == 'Dollar gains on Greenspan speech'
         assert 'The dollar has hit its' in df['content'][0]
+
+        return 
+    
+    def test_preprocess_text (self):
+        articles = DMLoadData.load_from_directory(self.data_dir)
+        for article in articles.repository: 
+            article.basic_preprocess()
+
+        assert articles.repository[0].category == 'business'
+        assert articles.repository[0].title == 'dollar gain greenspan speech' 
+        assert 'dollar hit highest level euro almost three' in articles.repository[0].content    
 
         return 
     
