@@ -13,6 +13,10 @@ class DMArticleRepository(BaseModel):
     repository:List[DMArticle]
     articles_preprocessed:Optional[bool] = False
 
+    # To return the article by index 
+    def get_article (self, article_idx: int) -> DMArticle:
+        return self.repository[article_idx]
+
     # To return the top n articles based on the query 
     def get_top_n_articles (self, incoming_query: str, top_n: int) -> pd.DataFrame:
         return self._get_basic_top_n_scores (query=DMQuery(content=incoming_query), top_n=top_n)
@@ -86,7 +90,8 @@ class DMArticleRepository(BaseModel):
                 'title': most_similar_document.original_title,
                 'content': most_similar_document.original_content,
                 'relevance_score': final_scores[idx],
-                'novelty_score': self.get_novelty_score(article_idx=idx)
+                'novelty_score': self.get_novelty_score(article_idx=idx),
+                'article_idx': idx
             })
 
         # Create the pandas DataFrame from the results list.

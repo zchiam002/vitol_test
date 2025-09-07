@@ -1,5 +1,5 @@
 import re
-from typing import Optional
+from typing import List, Optional
 from collections import Counter
 import nltk
 nltk.download('punkt')
@@ -52,24 +52,18 @@ class DMArticle(BaseModel):
 
         return 
     
-    # def get_key_terms(self, n: int = 5) -> List[str]:
-    #     """
-    #     Returns a list of the most frequent words in the article's content,
-    #     which serve as key terms.
+    def get_key_terms(self, top_n: int = 5) -> List[str]:
+        # Combine the contents into a single string and process them
+        words = self.combine_fields().split()
+        
+        # Count the frequency of each word
+        word_counts = Counter(words)
+        
+        # Return the top n most common words
+        most_common_words = word_counts.most_common(top_n)
+        
+        return [word for word, _ in most_common_words]
 
-    #     Args:
-    #         n (int): The number of key terms to return.
-
-    #     Returns:
-    #         List[str]: A list of the top n most frequent words.
-    #     """
-    #     # The content is already preprocessed and in a single string.
-    #     words = self.content.split()
-        
-    #     # Use Counter to get the frequency of each word
-    #     word_counts = Counter(words)
-        
-    #     # Return the top n most common words
-    #     most_common_words = word_counts.most_common(n)
-        
-    #     return [word for word, count in most_common_words]
+    def combine_fields(self) -> str:
+        combined_text = f"{self.category} {self.title} {self.content}"
+        return combined_text
