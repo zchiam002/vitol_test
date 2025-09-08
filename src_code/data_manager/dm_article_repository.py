@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from pydantic_settings import SettingsConfigDict
 from typing import List, Dict, Optional
 import numpy as np
 import pandas as pd
@@ -10,8 +11,15 @@ from src_code.data_manager.dm_article import DMArticle
 from src_code.data_manager.dm_query import DMQuery
 
 class DMArticleRepository(BaseModel):
-    repository:List[DMArticle]
-    articles_preprocessed:Optional[bool] = False
+    model_config = SettingsConfigDict(arbitrary_types_allowed=True)
+
+    repository: List[DMArticle]
+
+    repository_vectorizer: Optional[TfidfVectorizer] = None
+    repository_tfidf_matrix: Optional[csr_matrix] = None
+    _articles_preprocessed: Optional[bool] = False
+    _articles_key_word_vector_generated: Optional[bool] = False 
+    _repository_tfidf_matrix_generated: Optional[bool] = False
 
     # To return the article by index 
     def get_article (self, article_idx: int) -> DMArticle:
@@ -52,6 +60,35 @@ class DMArticleRepository(BaseModel):
             'content': 1.0
         }
         return WEIGHTS
+
+    # To generate the top n reccomended articles 
+    def get_top_n_recommended_articles(self, user_interest_vector: csr_matrix, top_n_key_words: int=5, top_n_articles: int=10) -> pd.DataFrame:
+        # Build the tfidf matrix on the repository level to facilitate computation 
+        self.build_repository_tfidf_matrix(top_n_key_words=top_n_key_words)
+        similarity_scores = cosine_similarity(user_interest_vector, self.repository_tfidf_matrix)
+
+        # 2. Get the indices of the top N articles
+        top_n_indices = np.argsort(similarity_scores).flatten()[::-1][:top_n_articles]
+        
+        # 3. Create the results DataFrame
+        recommendations_data = []
+        for idx in top_n_indices:
+            recommendations_data.append({
+                'article_idx': idx,
+                'similarity_score': similarity_scores[0, idx]
+            })
+
+        return pd.DataFrame(recommendations_data)
+
+    # To build the matrix on the repository level 
+    def build_repository_tfidf_matrix(self, top_n_key_words: int=5) -> None:
+        if not self._repository_tfidf_matrix_generated:
+            self._initialize_article_key_words(top_n_key_words=top_n_key_words)
+            contents = [" ".join(article.key_words) for article in self.repository]
+            self.repository_vectorizer = TfidfVectorizer(stop_words='english')
+
+            self.repository_tfidf_matrix = self.repository_vectorizer.fit_transform(contents)
+        return 
 
     # To do basic computation of the relevance score 
     def _get_basic_top_n_scores (self, query: DMQuery, top_n: int) -> pd.DataFrame: 
@@ -162,6 +199,16 @@ class DMArticleRepository(BaseModel):
 
         return
 
+    # To initialize all the key word vectors for every article in the repository
+    def _initialize_article_key_words (self, top_n_key_words: int=5) -> None:
+        if not self._articles_key_word_vector_generated:
+            self._execute_basic_process()
+            
+            for article in self.repository: 
+                article.get_key_terms(top_n=top_n_key_words)
+        
+        return 
+
     # To consolidate all the content in the repository into a single list 
     def _get_consolidate_into_list(self, attribute: str) -> List[str]:
         # Define a set of valid attributes to prevent arbitrary attribute access
@@ -176,9 +223,9 @@ class DMArticleRepository(BaseModel):
     
     # To execute basic pre-processing of the articles in the repository 
     def _execute_basic_process (self) -> None: 
-        if not self.articles_preprocessed:
+        if not self._articles_preprocessed:
             for article in self.repository:
                 article.basic_preprocess(cache_original=True)
             
-            self.articles_preprocessed = True
+            self._articles_preprocessed = True
         return 

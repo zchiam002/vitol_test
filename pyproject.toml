@@ -34,6 +34,7 @@ dependencies = [
     "pure-eval>=0.2.3",
     "pydantic>=2.11.7",
     "pydantic-core>=2.33.2",
+    "pydantic-settings>=2.10.1",
     "pygments>=2.19.2",
     "python-dateutil>=2.9.0.post0",
     "pytz>=2025.2",

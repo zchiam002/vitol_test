@@ -8,12 +8,17 @@ nltk.download('wordnet')
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from pydantic import BaseModel
+from pydantic_settings import SettingsConfigDict
+from scipy.sparse import csr_matrix
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 class DMArticle(BaseModel):
     '''The category is defined by the folder name,
     the title is extracted from the first line of the article,
     the rest are the contents.
     '''
+    model_config = SettingsConfigDict(arbitrary_types_allowed=True)
+
     category: str
     title: str
     content: str
@@ -21,6 +26,9 @@ class DMArticle(BaseModel):
     original_category: Optional[str] = None
     original_title: Optional[str] = None
     original_content: Optional[str] = None
+
+    key_words: Optional[str] = []
+    key_word_vector: Optional[csr_matrix] = None
 
     # Basic preprocessing of the data 
     def basic_preprocess (self, cache_original: bool = True) -> None:
@@ -53,17 +61,27 @@ class DMArticle(BaseModel):
         return 
     
     def get_key_terms(self, top_n: int = 5) -> List[str]:
-        # Combine the contents into a single string and process them
-        words = self.combine_fields().split()
-        
-        # Count the frequency of each word
-        word_counts = Counter(words)
-        
-        # Return the top n most common words
-        most_common_words = word_counts.most_common(top_n)
-        
-        return [word for word, _ in most_common_words]
+        if len(self.key_words) != top_n: 
+            # Combine the contents into a single string and process them
+            words = self.combine_fields().split()
+            
+            # Count the frequency of each word
+            word_counts = Counter(words)
+            
+            # Return the top n most common words
+            most_common_words = word_counts.most_common(top_n)
 
+            # Generating the return response
+            ret_list = [word for word, _ in most_common_words]
+
+            # Updating the key words list and the key word vector 
+            self.key_words = ret_list
+            vectorizer = TfidfVectorizer(stop_words='english')
+
+            self.key_word_vector = vectorizer.fit_transform(self.key_words)
+
+        return self.key_words
+    
     def combine_fields(self) -> str:
         combined_text = f"{self.category} {self.title} {self.content}"
         return combined_text
