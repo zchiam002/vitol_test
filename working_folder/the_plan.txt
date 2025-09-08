@@ -12,11 +12,4 @@ it is important to talk about RAG and graph importance also
 how do i search the database then?
 
 
-    # 1. Generate embedding for the search query
-    # 2. Compute relevance (cosine similarity) for all articles
-    # 3. Load pre-computed topic, novelty, and key_terms for each article
-    # 4. Create a list of result dictionaries with {'topic', 'relevance', 'novelty', 'article', 'key_terms'}
-    # 5. Sort the list based on the 'sort_by' parameter
-    # 6. Return the top N results
-
     pgvector 
